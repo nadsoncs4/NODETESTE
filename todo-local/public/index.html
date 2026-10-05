@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Tarefas</title>
+  <style>
+    body { font-family: sans-serif; max-width: 500px; margin: 40px auto; }
+    input { padding: 8px; width: 70%; }
+    button { padding: 8px 12px; cursor: pointer; }
+    li { margin: 8px 0; display: flex; justify-content: space-between; align-items: center; }
+    .feita { text-decoration: line-through; color: gray; }
+  </style>
+</head>
+<body>
+  <h1>📝 Minhas Tarefas</h1>
+
+  <input id="campo" placeholder="Digite uma tarefa..." />
+  <button onclick="adicionar()">Adicionar</button>
+
+  <ul id="lista"></ul>
+
+  <script>
+    // Busca a lista de tarefas no backend e desenha na tela
+    async function carregar() {
+      const res = await fetch('/tarefas');
+      const tarefas = await res.json();
+
+      const lista = document.getElementById('lista');
+      lista.innerHTML = '';
+
+      tarefas.forEach(t => {
+        const li = document.createElement('li');
+
+        const span = document.createElement('span');
+        span.textContent = t.titulo;
+        if (t.feita) span.className = 'feita';
+        span.style.cursor = 'pointer';
+        span.onclick = () => alternar(t.id);
+
+        const btn = document.createElement('button');
+        btn.textContent = '🗑️';
+        btn.onclick = () => apagar(t.id);
+
+        li.appendChild(span);
+        li.appendChild(btn);
+        lista.appendChild(li);
+      });
+    }
+
+    // Envia uma nova tarefa para o backend
+    async function adicionar() {
+      const campo = document.getElementById('campo');
+      if (!campo.value.trim()) return;
+
+      await fetch('/tarefas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo: campo.value })
+      });
+
+      campo.value = '';
+      carregar();
+    }
+
+    // Marca/desmarca uma tarefa como feita
+    async function alternar(id) {
+      await fetch('/tarefas/' + id, { method: 'PUT' });
+      carregar();
+    }
+
+    // Apaga uma tarefa
+    async function apagar(id) {
+      await fetch('/tarefas/' + id, { method: 'DELETE' });
+      carregar();
+    }
+
+    // Apertar Enter no campo também adiciona
+    document.getElementById('campo').addEventListener('keypress', e => {
+      if (e.key === 'Enter') adicionar();
+    });
+
+    carregar();
+  </script>
+</body>
+</html>
